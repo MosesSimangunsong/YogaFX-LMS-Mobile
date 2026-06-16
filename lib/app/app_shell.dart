@@ -3,6 +3,10 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/home/presentation/screens/home_screen.dart';
+import '../features/modules/presentation/screens/modules_screen.dart';
+import '../features/profile/presentation/screens/profile_screen.dart';
+
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -11,16 +15,19 @@ class AppShell extends StatelessWidget {
   static const _items = [
     _ShellItem(
       label: 'Home',
+      routePath: HomeScreen.routePath,
       icon: Icons.home_rounded,
       activeIcon: Icons.home_filled,
     ),
     _ShellItem(
       label: 'Modules',
+      routePath: ModulesScreen.routePath,
       icon: Icons.grid_view_rounded,
       activeIcon: Icons.grid_view_rounded,
     ),
     _ShellItem(
       label: 'Profile',
+      routePath: ProfileScreen.routePath,
       icon: Icons.account_circle_outlined,
       activeIcon: Icons.account_circle_rounded,
     ),
@@ -67,13 +74,7 @@ class AppShell extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(22),
-                          onTap: () {
-                            navigationShell.goBranch(
-                              index,
-                              initialLocation:
-                                  index == navigationShell.currentIndex,
-                            );
-                          },
+                          onTap: () => context.go(item.routePath),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 220),
                             curve: Curves.easeOutCubic,
@@ -133,11 +134,13 @@ class AppShell extends StatelessWidget {
 class _ShellItem {
   const _ShellItem({
     required this.label,
+    required this.routePath,
     required this.icon,
     required this.activeIcon,
   });
 
   final String label;
+  final String routePath;
   final IconData icon;
   final IconData activeIcon;
 }

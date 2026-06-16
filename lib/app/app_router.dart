@@ -164,19 +164,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
     redirect: (context, state) {
       final location = state.matchedLocation;
-      const shellLocations = {
-        HomeScreen.routePath,
-        ModulesScreen.routePath,
-        ModuleDetailScreen.routePath,
-        AssignmentDetailScreen.routePath,
-        LessonDetailScreen.routePath,
-        AssessmentScreen.routePath,
-        CertificatesScreen.routePath,
-        CertificateDetailScreen.routePath,
-        ProfileScreen.routePath,
-        EditProfileScreen.routePath,
-        ChangePasswordScreen.routePath,
-      };
 
       if (authState.status == AuthStatus.checking) {
         return location == SplashScreen.routePath
@@ -190,7 +177,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (location == SplashScreen.routePath ||
           location == LoginScreen.routePath ||
-          !shellLocations.contains(location)) {
+          !_isShellLocation(location)) {
         return HomeScreen.routePath;
       }
 
@@ -198,3 +185,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     },
   );
 });
+
+bool _isShellLocation(String location) {
+  if (location == HomeScreen.routePath ||
+      location == ModulesScreen.routePath ||
+      location == ProfileScreen.routePath) {
+    return true;
+  }
+
+  return location.startsWith('${ModulesScreen.routePath}/') ||
+      location.startsWith('${ProfileScreen.routePath}/');
+}

@@ -22,7 +22,8 @@ class LessonsRepositoryImpl implements LessonsRepository {
 
       final body = response.data ?? <String, dynamic>{};
       final payload = _extractPayload(body);
-      return LessonDetail.fromJson(payload);
+      final lesson = LessonDetail.fromJson(payload);
+      return lesson.id.isEmpty ? lesson.copyWith(id: lessonId) : lesson;
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -63,14 +64,14 @@ class LessonsRepositoryImpl implements LessonsRepository {
     if (data is Map<String, dynamic>) {
       final lesson = data['lesson'];
       if (lesson is Map<String, dynamic>) {
-        return lesson;
+        return {...data, ...lesson}..remove('lesson');
       }
       return data;
     }
 
     final lesson = body['lesson'];
     if (lesson is Map<String, dynamic>) {
-      return lesson;
+      return {...body, ...lesson}..remove('lesson');
     }
 
     return body;

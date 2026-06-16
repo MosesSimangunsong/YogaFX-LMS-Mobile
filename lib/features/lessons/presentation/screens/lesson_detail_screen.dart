@@ -42,8 +42,11 @@ class LessonDetailScreen extends ConsumerWidget {
               await ref.read(lessonDetailControllerProvider(lessonId).future);
             },
             child: state.when(
-              data: (lesson) =>
-                  _LessonDetailContent(moduleId: moduleId, lesson: lesson),
+              data: (lesson) => _LessonDetailContent(
+                moduleId: moduleId,
+                requestedLessonId: lessonId,
+                lesson: lesson,
+              ),
               loading: () => const _LessonDetailLoadingState(),
               error: (error, _) => AppErrorView(message: error.toString()),
             ),
@@ -55,16 +58,24 @@ class LessonDetailScreen extends ConsumerWidget {
 }
 
 class _LessonDetailContent extends ConsumerWidget {
-  const _LessonDetailContent({required this.moduleId, required this.lesson});
+  const _LessonDetailContent({
+    required this.moduleId,
+    required this.requestedLessonId,
+    required this.lesson,
+  });
 
   final String moduleId;
+  final String requestedLessonId;
   final LessonDetail lesson;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final resolvedLessonId = lesson.id.isNotEmpty
+        ? lesson.id
+        : requestedLessonId;
     final progressState = ref.watch(
-      lessonProgressControllerProvider(lesson.id),
+      lessonProgressControllerProvider(resolvedLessonId),
     );
 
     return ListView(
@@ -119,7 +130,11 @@ class _LessonDetailContent extends ConsumerWidget {
                   ),
                   ShellMetricItem(
                     label: 'Video',
-                    value: lesson.video.isAvailable ? 'Ready' : 'Missing',
+                    value: lesson.video.isAvailable
+                        ? 'Ready'
+                        : lesson.video.hasSource
+                        ? 'Invalid'
+                        : 'Missing',
                     icon: Icons.video_library_rounded,
                     iconColor: const Color(0xFF89C2FF),
                   ),
@@ -180,7 +195,7 @@ class _LessonDetailContent extends ConsumerWidget {
                         : () => ref
                               .read(
                                 lessonProgressControllerProvider(
-                                  lesson.id,
+                                  resolvedLessonId,
                                 ).notifier,
                               )
                               .syncProgress(
@@ -207,7 +222,7 @@ class _LessonDetailContent extends ConsumerWidget {
                         : () => ref
                               .read(
                                 lessonProgressControllerProvider(
-                                  lesson.id,
+                                  resolvedLessonId,
                                 ).notifier,
                               )
                               .syncProgress(
@@ -223,7 +238,7 @@ class _LessonDetailContent extends ConsumerWidget {
                     onPressed: progressState.isLoading
                         ? null
                         : () => ref.invalidate(
-                            lessonDetailControllerProvider(lesson.id),
+                            lessonDetailControllerProvider(resolvedLessonId),
                           ),
                     icon: const Icon(Icons.refresh_rounded),
                     label: const Text('Refresh lesson'),
@@ -239,7 +254,7 @@ class _LessonDetailContent extends ConsumerWidget {
           subtitle: 'HLS-ready lesson video player for mobile consumption.',
         ),
         const SizedBox(height: 16),
-        lesson.video.isAvailable
+        lesson.video.hasSource
             ? _LessonVideoCard(video: lesson.video)
             : const SizedBox(
                 height: 220,
@@ -284,7 +299,7 @@ class _LessonDetailContent extends ConsumerWidget {
         const SizedBox(height: 16),
         _AssessmentCard(
           moduleId: moduleId,
-          lessonId: lesson.id,
+          lessonId: resolvedLessonId,
           assessment: lesson.relatedAssessment,
         ),
       ],
@@ -302,8 +317,7 @@ class _LessonVideoCard extends StatefulWidget {
 }
 
 class _LessonVideoCardState extends State<_LessonVideoCard> {
-  late final VideoPlayerController _controller =
-      VideoPlayerController.networkUrl(Uri.parse(widget.video.hlsUrl));
+  VideoPlayerController? _controller;
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -313,13 +327,40 @@ class _LessonVideoCardState extends State<_LessonVideoCard> {
     _initialize();
   }
 
+  @override
+  void didUpdateWidget(covariant _LessonVideoCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.video.hlsUrl != widget.video.hlsUrl) {
+      _disposeController();
+      _initialize();
+    }
+  }
+
   Future<void> _initialize() async {
+    _isLoading = true;
+    _errorMessage = null;
+
+    final playbackUri = widget.video.playbackUri;
+    if (playbackUri == null) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage =
+            'Backend returned an invalid lesson video URL for mobile playback.';
+      });
+      return;
+    }
+
+    final controller = VideoPlayerController.networkUrl(playbackUri);
+    _controller = controller;
+    controller.addListener(_handleControllerUpdate);
+
     try {
-      await _controller.initialize();
-      await _controller.setLooping(false);
+      await controller.initialize();
+      await controller.setLooping(false);
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _errorMessage = null;
         });
       }
     } catch (_) {
@@ -332,15 +373,44 @@ class _LessonVideoCardState extends State<_LessonVideoCard> {
     }
   }
 
+  void _handleControllerUpdate() {
+    final controller = _controller;
+    final errorDescription = controller?.value.errorDescription;
+    if (!mounted ||
+        errorDescription == null ||
+        errorDescription == _errorMessage) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = false;
+      _errorMessage = errorDescription;
+    });
+  }
+
+  void _disposeController() {
+    final controller = _controller;
+    if (controller == null) {
+      return;
+    }
+
+    controller.removeListener(_handleControllerUpdate);
+    controller.dispose();
+    _controller = null;
+  }
+
   @override
   void dispose() {
-    _controller.dispose();
+    _disposeController();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final controller = _controller;
+    final isInitialized = controller?.value.isInitialized ?? false;
+    final isPlaying = controller?.value.isPlaying ?? false;
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -357,15 +427,15 @@ class _LessonVideoCardState extends State<_LessonVideoCard> {
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: AspectRatio(
-              aspectRatio: _controller.value.isInitialized
-                  ? _controller.value.aspectRatio
+              aspectRatio: isInitialized
+                  ? controller!.value.aspectRatio
                   : 16 / 9,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Container(color: Colors.black),
-                  if (_controller.value.isInitialized)
-                    VideoPlayer(_controller)
+                  if (isInitialized)
+                    VideoPlayer(controller!)
                   else if (_isLoading)
                     const ShellSkeleton(height: double.infinity, radius: 0)
                   else
@@ -376,19 +446,22 @@ class _LessonVideoCardState extends State<_LessonVideoCard> {
                           'This lesson video could not be loaded.',
                       icon: Icons.error_outline_rounded,
                     ),
-                  if (_controller.value.isInitialized)
+                  if (isInitialized)
                     IconButton.filled(
                       onPressed: () {
-                        setState(() {
-                          if (_controller.value.isPlaying) {
-                            _controller.pause();
-                          } else {
-                            _controller.play();
-                          }
-                        });
+                        final activeController = controller;
+                        if (activeController == null) {
+                          return;
+                        }
+                        if (isPlaying) {
+                          activeController.pause();
+                        } else {
+                          activeController.play();
+                        }
+                        setState(() {});
                       },
                       icon: Icon(
-                        _controller.value.isPlaying
+                        isPlaying
                             ? Icons.pause_rounded
                             : Icons.play_arrow_rounded,
                       ),

@@ -34,12 +34,14 @@ class LessonDetail {
       video: LessonVideo.fromJson(
         _asMap(json['video']) ??
             _asMap(media['video']) ??
+            _videoFromFlatJson(media) ??
             _videoFromFlatJson(json) ??
             const <String, dynamic>{},
       ),
       audio: LessonAudio.fromJson(
         _asMap(json['audio']) ??
             _asMap(media['audio']) ??
+            _audioFromFlatJson(media) ??
             _audioFromFlatJson(json) ??
             const <String, dynamic>{},
       ),
@@ -47,6 +49,7 @@ class LessonDetail {
         _asMap(json['workbook']) ??
             _asMap(json['file']) ??
             _asMap(media['workbook']) ??
+            _workbookFromFlatJson(media) ??
             _workbookFromFlatJson(json) ??
             const <String, dynamic>{},
       ),
@@ -67,6 +70,30 @@ class LessonDetail {
   final LessonAudio audio;
   final LessonWorkbook workbook;
   final LessonAssessment relatedAssessment;
+
+  LessonDetail copyWith({
+    String? id,
+    String? title,
+    String? body,
+    String? progressLabel,
+    String? completionLabel,
+    LessonVideo? video,
+    LessonAudio? audio,
+    LessonWorkbook? workbook,
+    LessonAssessment? relatedAssessment,
+  }) {
+    return LessonDetail(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      progressLabel: progressLabel ?? this.progressLabel,
+      completionLabel: completionLabel ?? this.completionLabel,
+      video: video ?? this.video,
+      audio: audio ?? this.audio,
+      workbook: workbook ?? this.workbook,
+      relatedAssessment: relatedAssessment ?? this.relatedAssessment,
+    );
+  }
 }
 
 class LessonVideo {
@@ -84,6 +111,8 @@ class LessonVideo {
           'Lesson video',
       hlsUrl:
           _asString(json['hls_url']) ??
+          _asString(json['playback_url']) ??
+          _asString(json['playlist_url']) ??
           _asString(json['url']) ??
           _asString(json['stream_url']) ??
           '',
@@ -99,7 +128,11 @@ class LessonVideo {
   final String hlsUrl;
   final String posterUrl;
 
-  bool get isAvailable => hlsUrl.isNotEmpty;
+  Uri? get playbackUri => _asHttpUri(hlsUrl);
+
+  bool get hasSource => hlsUrl.isNotEmpty;
+
+  bool get isAvailable => playbackUri != null;
 }
 
 class LessonAudio {
@@ -212,6 +245,8 @@ Map<String, dynamic>? _videoFromFlatJson(Map<String, dynamic> json) {
   final url =
       _asString(json['video_hls_url']) ??
       _asString(json['video_url']) ??
+      _asString(json['playback_url']) ??
+      _asString(json['playlist_url']) ??
       _asString(json['hls_url']);
   if (url == null) {
     return null;
@@ -242,5 +277,22 @@ Map<String, dynamic>? _workbookFromFlatJson(Map<String, dynamic> json) {
   return {
     'url': url,
     'label': _asString(json['workbook_label']) ?? _asString(json['file_name']),
+  };
+}
+
+Uri? _asHttpUri(Object? value) {
+  final text = _asString(value);
+  if (text == null) {
+    return null;
+  }
+
+  final uri = Uri.tryParse(text);
+  if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+    return null;
+  }
+
+  return switch (uri.scheme.toLowerCase()) {
+    'http' || 'https' => uri,
+    _ => null,
   };
 }
