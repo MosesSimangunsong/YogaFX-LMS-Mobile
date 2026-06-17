@@ -100,6 +100,7 @@ class _ModulesContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         ShellMediaRail(
+          sectionTitle: 'Semua Modul',
           items: featuredCards.asMap().entries.map((entry) {
             final module = entry.value;
             return ShellMediaCardData(

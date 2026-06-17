@@ -14,7 +14,7 @@ class MobileLmsApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'YogaFX Student',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark(),
+      theme: AppTheme.darkTheme,
       routerConfig: router,
     );
   }

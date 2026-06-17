@@ -38,7 +38,7 @@ class AppShell extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-  body: currentScreen,
+  body: child,
   extendBody: true, // WAJIB: Agar konten meluas ke belakang navbar melayang
   bottomNavigationBar: Padding(
     padding: const EdgeInsets.only(bottom: 24.0, left: 32.0, right: 32.0),

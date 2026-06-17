@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  static const Color background = Color(0xFF000000);
+  
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,

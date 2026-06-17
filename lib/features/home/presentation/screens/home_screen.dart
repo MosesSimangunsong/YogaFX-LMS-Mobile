@@ -4,6 +4,9 @@ import '../../../../core/widgets/shell_media_rail.dart';
 import '../../../../core/widgets/shell_media_card.dart';
 
 class HomeScreen extends StatelessWidget {
+
+  static const String routeName = 'home';
+  static const String routePath = '/home';
   const HomeScreen({super.key});
 
   @override
@@ -19,7 +22,7 @@ class HomeScreen extends StatelessWidget {
             snap: true,
             leading: Padding(
               padding: const EdgeInsets.all(12.0),
-              child: Image.asset('assets/images/logo_yogafx.png', fit: FontWeight.contain), // Logo Kiri
+              Image.asset('assets/images/logo_yogafx.png', fit: BoxFit.contain), // Logo Kiri
             ),
             actions: [
               IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () {}),
@@ -54,7 +57,7 @@ class HomeScreen extends StatelessWidget {
                         selected: category == 'Semua Kursus',
                         onSelected: (_) {},
                         selectedColor: Colors.white,
-                        textColor: category == 'Semua Kursus' ? Colors.black : Colors.white,
+                        labelStyle: category == 'Semua Kursus' ? Colors.black : Colors.white,
                         backgroundColor: const Color(0xFF222222),
                       ),
                     );
