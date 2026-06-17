@@ -38,96 +38,32 @@ class AppShell extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      extendBody: true,
-      body: navigationShell,
-      bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xCC0F141C),
-                border: Border.all(color: theme.dividerColor),
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x55000000),
-                    blurRadius: 24,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
-                child: Row(
-                  children: List.generate(_items.length, (index) {
-                    final item = _items[index];
-                    final isActive = navigationShell.currentIndex == index;
-
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(22),
-                          onTap: () => context.go(item.routePath),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(22),
-                              gradient: isActive
-                                  ? const LinearGradient(
-                                      colors: [
-                                        Color(0xFFE85D04),
-                                        Color(0xFFFF7B00),
-                                      ],
-                                    )
-                                  : null,
-                              color: isActive ? null : Colors.transparent,
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isActive ? item.activeIcon : item.icon,
-                                  size: 22,
-                                  color: isActive
-                                      ? Colors.white
-                                      : const Color(0xFFB4BFCE),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  item.label,
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: isActive
-                                        ? Colors.white
-                                        : const Color(0xFF8D99AA),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ),
-          ),
+  body: currentScreen,
+  extendBody: true, // WAJIB: Agar konten meluas ke belakang navbar melayang
+  bottomNavigationBar: Padding(
+    padding: const EdgeInsets.only(bottom: 24.0, left: 32.0, right: 32.0),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        color: const Color(0xFF1A1A1A).withOpacity(0.85), // Semi transparan
+        height: 65,
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: const Color(0xFFE50914),
+          unselectedItemColor: Colors.grey,
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.video_library), label: 'Modules'),
+            BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Tasks'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

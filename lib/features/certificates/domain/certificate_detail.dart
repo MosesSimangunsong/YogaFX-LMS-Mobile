@@ -12,8 +12,15 @@ class CertificateDetail {
   });
 
   factory CertificateDetail.fromJson(Map<String, dynamic> json) {
+    final file =
+        _asMap(json['file']) ?? _asMap(json['certificate_file']) ?? const {};
+
     return CertificateDetail(
-      id: _asString(json['id']) ?? _asString(json['slug']) ?? '',
+      id:
+          _asString(json['id']) ??
+          _asString(json['certificate_id']) ??
+          _asString(json['slug']) ??
+          '',
       title:
           _asString(json['title']) ?? _asString(json['name']) ?? 'Certificate',
       description:
@@ -27,15 +34,21 @@ class CertificateDetail {
       issuedLabel:
           _asString(json['issued_at_label']) ??
           _asString(json['issued_at']) ??
+          _asString(json['issued_on']) ??
           _asString(json['date']) ??
           'Ready to view',
       fileUrl:
           _asString(json['file_url']) ??
           _asString(json['url']) ??
+          _asString(file['url']) ??
+          _asString(file['file_url']) ??
           _asString(json['open_url']) ??
+          _asString(json['preview_url']) ??
           '',
       downloadUrl:
           _asString(json['download_url']) ??
+          _asString(file['download_url']) ??
+          _asString(json['pdf_url']) ??
           _asString(json['file_url']) ??
           _asString(json['url']) ??
           '',
@@ -61,7 +74,9 @@ class CertificateDetail {
   final String eligibilityLabel;
   final String recipientName;
 
-  bool get canOpen => fileUrl.isNotEmpty || downloadUrl.isNotEmpty;
+  bool get canOpen => openUri != null || downloadUri != null;
+  Uri? get openUri => _asHttpUri(fileUrl);
+  Uri? get downloadUri => _asHttpUri(downloadUrl);
 }
 
 String? _asString(Object? value) {
@@ -70,4 +85,31 @@ String? _asString(Object? value) {
   }
   final text = value.toString().trim();
   return text.isEmpty ? null : text;
+}
+
+Map<String, dynamic>? _asMap(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return value.map((key, item) => MapEntry(key.toString(), item));
+  }
+  return null;
+}
+
+Uri? _asHttpUri(Object? value) {
+  final text = _asString(value);
+  if (text == null) {
+    return null;
+  }
+
+  final uri = Uri.tryParse(text);
+  if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+    return null;
+  }
+
+  return switch (uri.scheme.toLowerCase()) {
+    'http' || 'https' => uri,
+    _ => null,
+  };
 }

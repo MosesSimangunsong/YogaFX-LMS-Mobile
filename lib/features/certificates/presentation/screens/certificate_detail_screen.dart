@@ -154,9 +154,9 @@ class _CertificateDetailContent extends StatelessWidget {
                         ElevatedButton.icon(
                           onPressed: () => launchExternalUrl(
                             context,
-                            certificate.fileUrl.isNotEmpty
-                                ? certificate.fileUrl
-                                : certificate.downloadUrl,
+                            (certificate.openUri ?? certificate.downloadUri)
+                                    ?.toString() ??
+                                '',
                             errorMessage:
                                 'The certificate file could not be opened on this device.',
                           ),
@@ -166,9 +166,9 @@ class _CertificateDetailContent extends StatelessWidget {
                         OutlinedButton.icon(
                           onPressed: () => launchExternalUrl(
                             context,
-                            certificate.downloadUrl.isNotEmpty
-                                ? certificate.downloadUrl
-                                : certificate.fileUrl,
+                            (certificate.downloadUri ?? certificate.openUri)
+                                    ?.toString() ??
+                                '',
                             errorMessage:
                                 'The certificate file could not be downloaded on this device.',
                           ),

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +14,7 @@ import 'package:mobile_lms/features/assessments/domain/assessment_session.dart';
 import 'package:mobile_lms/features/assignments/data/assignments_repository.dart';
 import 'package:mobile_lms/features/assignments/domain/assignment_detail.dart';
 import 'package:mobile_lms/features/assignments/domain/assignment_submission_result.dart';
+import 'package:mobile_lms/features/assignments/presentation/screens/assignment_detail_screen.dart';
 import 'package:mobile_lms/features/certificates/data/certificates_repository.dart';
 import 'package:mobile_lms/features/certificates/domain/certificate_detail.dart';
 import 'package:mobile_lms/features/certificates/domain/certificate_summary.dart';
@@ -134,9 +136,402 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Good evening'), findsOneWidget);
     expect(find.text('YogaFX Student'), findsOneWidget);
-    expect(find.text('Keep your streak moving'), findsOneWidget);
+    expect(find.text('Keep your streak moving'), findsWidgets);
+  });
+
+  testWidgets('opens modules tab and keeps it distinct from home', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          app_providers.appConfigProvider.overrideWithValue(
+            const AppConfig(
+              apiBaseUrl: 'https://example.com',
+              mobileApiPrefix: '/api/mobile/v1',
+              connectTimeoutMs: 1000,
+              receiveTimeoutMs: 1000,
+              enableNetworkLogs: false,
+            ),
+          ),
+          app_providers.tokenStorageProvider.overrideWithValue(
+            _InMemoryTokenStorage(),
+          ),
+          app_providers.authRepositoryProvider.overrideWithValue(
+            _FakeAuthRepository(
+              restoredUser: const AppUser(
+                id: '42',
+                email: 'student@example.com',
+                name: 'YogaFX Student',
+              ),
+            ),
+          ),
+          app_providers.assessmentsRepositoryProvider.overrideWithValue(
+            _FakeAssessmentsRepository(),
+          ),
+          app_providers.assignmentsRepositoryProvider.overrideWithValue(
+            _FakeAssignmentsRepository(),
+          ),
+          app_providers.certificatesRepositoryProvider.overrideWithValue(
+            _FakeCertificatesRepository(),
+          ),
+          app_providers.dashboardRepositoryProvider.overrideWithValue(
+            _FakeDashboardRepository(),
+          ),
+          app_providers.modulesRepositoryProvider.overrideWithValue(
+            _FakeModulesRepository(),
+          ),
+          app_providers.lessonsRepositoryProvider.overrideWithValue(
+            _FakeLessonsRepository(),
+          ),
+          app_providers.profileRepositoryProvider.overrideWithValue(
+            _FakeProfileRepository(),
+          ),
+        ],
+        child: const MobileLmsApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('Keep your streak moving'), findsWidgets);
+
+    await tester.tap(find.text('Modules').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Featured modules'), findsOneWidget);
+    expect(find.text('All modules'), findsOneWidget);
+    expect(find.text('Keep your streak moving'), findsNothing);
+  });
+
+  testWidgets(
+    'continue learning opens lesson detail when module and lesson ids exist',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            app_providers.appConfigProvider.overrideWithValue(
+              const AppConfig(
+                apiBaseUrl: 'https://example.com',
+                mobileApiPrefix: '/api/mobile/v1',
+                connectTimeoutMs: 1000,
+                receiveTimeoutMs: 1000,
+                enableNetworkLogs: false,
+              ),
+            ),
+            app_providers.tokenStorageProvider.overrideWithValue(
+              _InMemoryTokenStorage(),
+            ),
+            app_providers.authRepositoryProvider.overrideWithValue(
+              _FakeAuthRepository(
+                restoredUser: const AppUser(
+                  id: '42',
+                  email: 'student@example.com',
+                  name: 'YogaFX Student',
+                ),
+              ),
+            ),
+            app_providers.assessmentsRepositoryProvider.overrideWithValue(
+              _FakeAssessmentsRepository(),
+            ),
+            app_providers.assignmentsRepositoryProvider.overrideWithValue(
+              _FakeAssignmentsRepository(),
+            ),
+            app_providers.certificatesRepositoryProvider.overrideWithValue(
+              _FakeCertificatesRepository(),
+            ),
+            app_providers.dashboardRepositoryProvider.overrideWithValue(
+              _FakeDashboardRepository(),
+            ),
+            app_providers.modulesRepositoryProvider.overrideWithValue(
+              _FakeModulesRepository(),
+            ),
+            app_providers.lessonsRepositoryProvider.overrideWithValue(
+              _FakeLessonsRepository(),
+            ),
+            app_providers.profileRepositoryProvider.overrideWithValue(
+              _FakeProfileRepository(),
+            ),
+          ],
+          child: const MobileLmsApp(),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Resume'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lesson detail test body.'), findsOneWidget);
+      expect(find.text('Progress sync'), findsOneWidget);
+    },
+  );
+
+  testWidgets('lesson assessment can be opened and submitted safely', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          app_providers.appConfigProvider.overrideWithValue(
+            const AppConfig(
+              apiBaseUrl: 'https://example.com',
+              mobileApiPrefix: '/api/mobile/v1',
+              connectTimeoutMs: 1000,
+              receiveTimeoutMs: 1000,
+              enableNetworkLogs: false,
+            ),
+          ),
+          app_providers.tokenStorageProvider.overrideWithValue(
+            _InMemoryTokenStorage(),
+          ),
+          app_providers.authRepositoryProvider.overrideWithValue(
+            _FakeAuthRepository(
+              restoredUser: const AppUser(
+                id: '42',
+                email: 'student@example.com',
+                name: 'YogaFX Student',
+              ),
+            ),
+          ),
+          app_providers.assessmentsRepositoryProvider.overrideWithValue(
+            _FakeAssessmentsRepository(),
+          ),
+          app_providers.assignmentsRepositoryProvider.overrideWithValue(
+            _FakeAssignmentsRepository(),
+          ),
+          app_providers.certificatesRepositoryProvider.overrideWithValue(
+            _FakeCertificatesRepository(),
+          ),
+          app_providers.dashboardRepositoryProvider.overrideWithValue(
+            _FakeDashboardRepository(),
+          ),
+          app_providers.modulesRepositoryProvider.overrideWithValue(
+            _FakeModulesRepository(),
+          ),
+          app_providers.lessonsRepositoryProvider.overrideWithValue(
+            _FakeLessonsRepository(assessmentAvailable: true),
+          ),
+          app_providers.profileRepositoryProvider.overrideWithValue(
+            _FakeProfileRepository(),
+          ),
+        ],
+        child: const MobileLmsApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Resume'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -1400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Open assessment'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -220));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Open assessment'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lesson quiz'), findsOneWidget);
+    expect(find.text('How do you feel after the lesson?'), findsOneWidget);
+
+    await tester.tap(find.text('Strong'));
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -500));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Submit assessment'));
+    await tester.pumpAndSettle();
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Assessment result'), findsOneWidget);
+    expect(find.text('Score: 100'), findsOneWidget);
+    expect(find.text('Assessment submitted.'), findsWidgets);
+  });
+
+  testWidgets('module assignment detail can upload safely and refresh status', (
+    tester,
+  ) async {
+    final assignmentsRepository = _FakeAssignmentsRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          app_providers.appConfigProvider.overrideWithValue(
+            const AppConfig(
+              apiBaseUrl: 'https://example.com',
+              mobileApiPrefix: '/api/mobile/v1',
+              connectTimeoutMs: 1000,
+              receiveTimeoutMs: 1000,
+              enableNetworkLogs: false,
+            ),
+          ),
+          app_providers.tokenStorageProvider.overrideWithValue(
+            _InMemoryTokenStorage(),
+          ),
+          app_providers.authRepositoryProvider.overrideWithValue(
+            _FakeAuthRepository(
+              restoredUser: const AppUser(
+                id: '42',
+                email: 'student@example.com',
+                name: 'YogaFX Student',
+              ),
+            ),
+          ),
+          app_providers.assessmentsRepositoryProvider.overrideWithValue(
+            _FakeAssessmentsRepository(),
+          ),
+          app_providers.assignmentsRepositoryProvider.overrideWithValue(
+            assignmentsRepository,
+          ),
+          assignmentVideoPickerProvider.overrideWithValue(
+            () async => const PickedAssignmentVideo(
+              path: 'D:/tmp/practice.mp4',
+              name: 'practice.mp4',
+            ),
+          ),
+          app_providers.certificatesRepositoryProvider.overrideWithValue(
+            _FakeCertificatesRepository(),
+          ),
+          app_providers.dashboardRepositoryProvider.overrideWithValue(
+            _FakeDashboardRepository(),
+          ),
+          app_providers.modulesRepositoryProvider.overrideWithValue(
+            _FakeModulesRepository(),
+          ),
+          app_providers.lessonsRepositoryProvider.overrideWithValue(
+            _FakeLessonsRepository(),
+          ),
+          app_providers.profileRepositoryProvider.overrideWithValue(
+            _FakeProfileRepository(),
+          ),
+        ],
+        child: const MobileLmsApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Modules').last);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Core Flow Foundations').last);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -900));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daily Reflection Upload'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Record your practice, then upload the video file.'),
+      findsOneWidget,
+    );
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -1400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pick video'), findsOneWidget);
+
+    await tester.tap(find.text('Pick video'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('practice.mp4'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Upload video').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Assignment uploaded.'), findsWidgets);
+
+    await tester.tap(find.text('Refresh assignment'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, 650));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Under review'), findsOneWidget);
+    expect(find.text('practice.mp4'), findsOneWidget);
+    await tester.drag(find.byType(ListView).first, const Offset(0, -220));
+    await tester.pumpAndSettle();
+    expect(find.text('Your upload is in the review queue.'), findsOneWidget);
+  });
+
+  testWidgets('profile certificates open list and detail safely', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          app_providers.appConfigProvider.overrideWithValue(
+            const AppConfig(
+              apiBaseUrl: 'https://example.com',
+              mobileApiPrefix: '/api/mobile/v1',
+              connectTimeoutMs: 1000,
+              receiveTimeoutMs: 1000,
+              enableNetworkLogs: false,
+            ),
+          ),
+          app_providers.tokenStorageProvider.overrideWithValue(
+            _InMemoryTokenStorage(),
+          ),
+          app_providers.authRepositoryProvider.overrideWithValue(
+            _FakeAuthRepository(
+              restoredUser: const AppUser(
+                id: '42',
+                email: 'student@example.com',
+                name: 'YogaFX Student',
+              ),
+            ),
+          ),
+          app_providers.assessmentsRepositoryProvider.overrideWithValue(
+            _FakeAssessmentsRepository(),
+          ),
+          app_providers.assignmentsRepositoryProvider.overrideWithValue(
+            _FakeAssignmentsRepository(),
+          ),
+          app_providers.certificatesRepositoryProvider.overrideWithValue(
+            _FakeCertificatesRepository(),
+          ),
+          app_providers.dashboardRepositoryProvider.overrideWithValue(
+            _FakeDashboardRepository(),
+          ),
+          app_providers.modulesRepositoryProvider.overrideWithValue(
+            _FakeModulesRepository(),
+          ),
+          app_providers.lessonsRepositoryProvider.overrideWithValue(
+            _FakeLessonsRepository(),
+          ),
+          app_providers.profileRepositoryProvider.overrideWithValue(
+            _FakeProfileRepository(),
+          ),
+        ],
+        child: const MobileLmsApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Profile').last);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Certificates'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('YogaFX Completion Certificate'), findsWidgets);
+    expect(find.text('Eligible'), findsWidgets);
+
+    await tester.tap(find.text('YogaFX Completion Certificate').first);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, -700));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your certificate is ready'), findsOneWidget);
+    expect(find.text('YogaFX Student'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
+    expect(find.text('Download'), findsOneWidget);
   });
 }
 
@@ -189,6 +584,8 @@ class _FakeDashboardRepository implements DashboardRepository {
         description: 'Resume your latest session from the mobile dashboard.',
         primaryActionLabel: 'Resume',
         secondaryActionLabel: 'Details',
+        moduleId: 'module-1',
+        lessonId: 'lesson-1',
       ),
       metrics: const [
         DashboardMetric(label: 'Progress', value: '68%'),
@@ -205,6 +602,8 @@ class _FakeDashboardRepository implements DashboardRepository {
               subtitle: 'Focus rail item',
               durationLabel: '12 min',
               badge: 'New',
+              moduleId: 'module-1',
+              lessonId: 'lesson-1',
             ),
           ],
         ),
@@ -260,6 +659,10 @@ class _FakeModulesRepository implements ModulesRepository {
 }
 
 class _FakeLessonsRepository implements LessonsRepository {
+  _FakeLessonsRepository({this.assessmentAvailable = false});
+
+  final bool assessmentAvailable;
+
   @override
   Future<LessonDetail> fetchLessonDetail(String lessonId) async {
     return LessonDetail(
@@ -275,11 +678,11 @@ class _FakeLessonsRepository implements LessonsRepository {
       ),
       audio: const LessonAudio(title: 'Lesson audio', url: ''),
       workbook: const LessonWorkbook(label: 'Workbook', url: ''),
-      relatedAssessment: const LessonAssessment(
+      relatedAssessment: LessonAssessment(
         id: 'assessment-1',
         title: 'Quiz',
         ctaLabel: 'Open assessment',
-        isAvailable: false,
+        isAvailable: assessmentAvailable,
       ),
     );
   }
@@ -329,23 +732,30 @@ class _FakeAssessmentsRepository implements AssessmentsRepository {
 }
 
 class _FakeAssignmentsRepository implements AssignmentsRepository {
+  AssignmentSubmission? _latestSubmission;
+  AssignmentFeedback? _feedback;
+
   @override
   Future<AssignmentDetail> fetchAssignmentDetail(String assignmentId) async {
-    return const AssignmentDetail(
-      id: 'assignment-1',
+    return AssignmentDetail(
+      id: assignmentId,
       title: 'Daily Reflection Upload',
       description: 'Upload a short practice reflection video.',
       instructions: 'Record your practice, then upload the video file.',
-      statusLabel: 'Pending',
+      statusLabel: _latestSubmission == null ? 'Pending' : 'Under review',
       dueLabel: 'No due date',
       canUpload: true,
-      latestSubmission: AssignmentSubmission(
-        statusLabel: 'No submission yet',
-        fileName: '',
-        fileUrl: '',
-        submittedAtLabel: 'Waiting for upload',
-      ),
-      feedback: AssignmentFeedback(title: '', message: '', statusLabel: ''),
+      latestSubmission:
+          _latestSubmission ??
+          const AssignmentSubmission(
+            statusLabel: 'No submission yet',
+            fileName: '',
+            fileUrl: '',
+            submittedAtLabel: 'Waiting for upload',
+          ),
+      feedback:
+          _feedback ??
+          const AssignmentFeedback(title: '', message: '', statusLabel: ''),
     );
   }
 
@@ -355,10 +765,21 @@ class _FakeAssignmentsRepository implements AssignmentsRepository {
     required String filePath,
     required String fileName,
   }) async {
+    _latestSubmission = AssignmentSubmission(
+      statusLabel: 'Under review',
+      fileName: fileName,
+      fileUrl: 'https://example.com/uploads/$fileName',
+      submittedAtLabel: 'Submitted just now',
+    );
+    _feedback = const AssignmentFeedback(
+      title: 'Coach review pending',
+      message: 'Your upload is in the review queue.',
+      statusLabel: 'Pending review',
+    );
     return const AssignmentSubmissionResult(
       status: 'submitted',
       summary: 'Assignment uploaded.',
-      feedbackLabel: '',
+      feedbackLabel: 'Pending review',
     );
   }
 }

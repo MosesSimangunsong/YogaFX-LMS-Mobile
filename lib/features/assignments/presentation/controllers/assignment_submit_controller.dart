@@ -18,13 +18,13 @@ class AssignmentSubmitController
   @override
   Future<AssignmentSubmissionResult?> build(String arg) async => null;
 
-  Future<AssignmentSubmissionResult> submit({
+  Future<void> submit({
     required String moduleId,
     required String filePath,
     required String fileName,
   }) async {
     state = const AsyncLoading();
-    final nextState = await AsyncValue.guard(() async {
+    state = await AsyncValue.guard(() async {
       final result = await ref
           .read(app_providers.assignmentsRepositoryProvider)
           .submitAssignmentVideo(
@@ -40,7 +40,5 @@ class AssignmentSubmitController
 
       return result;
     });
-    state = nextState;
-    return nextState.requireValue;
   }
 }

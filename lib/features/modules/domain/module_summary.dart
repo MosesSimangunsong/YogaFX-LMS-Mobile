@@ -11,13 +11,21 @@ class ModuleSummary {
 
   factory ModuleSummary.fromJson(Map<String, dynamic> json) {
     final lessonCount =
-        _asInt(json['lesson_count']) ?? _asInt(json['lessons_count']);
+        _asInt(json['lesson_count']) ??
+        _asInt(json['lessons_count']) ??
+        _asListLength(json['lessons']);
     final assignmentCount =
-        _asInt(json['assignment_count']) ?? _asInt(json['assignments_count']);
+        _asInt(json['assignment_count']) ??
+        _asInt(json['assignments_count']) ??
+        _asListLength(json['assignments']);
     final totalItems = (lessonCount ?? 0) + (assignmentCount ?? 0);
 
     return ModuleSummary(
-      id: _asString(json['id']) ?? _asString(json['slug']) ?? '',
+      id:
+          _asString(json['id']) ??
+          _asString(json['module_id']) ??
+          _asString(json['slug']) ??
+          '',
       title:
           _asString(json['title']) ??
           _asString(json['name']) ??
@@ -30,6 +38,7 @@ class ModuleSummary {
           _asString(json['progress_label']) ??
           _asString(json['progress']) ??
           _asString(json['completion_percentage']) ??
+          _asString(json['progress_percent']) ??
           '--',
       itemCountLabel:
           _asString(json['item_count_label']) ??
@@ -37,6 +46,7 @@ class ModuleSummary {
       badge:
           _asString(json['badge']) ??
           _asString(json['status']) ??
+          _asString(json['access_state']) ??
           (_asBool(json['locked']) == true ? 'Locked' : null),
       accentIndex: _asInt(json['order']) ?? _asInt(json['position']) ?? 0,
     );
@@ -49,6 +59,13 @@ class ModuleSummary {
   final String itemCountLabel;
   final String? badge;
   final int accentIndex;
+}
+
+int? _asListLength(Object? value) {
+  if (value is List) {
+    return value.length;
+  }
+  return null;
 }
 
 String? _asString(Object? value) {

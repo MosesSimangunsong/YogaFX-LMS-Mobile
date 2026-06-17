@@ -1,80 +1,78 @@
 import 'package:flutter/material.dart';
 
 class ShellHeroBanner extends StatelessWidget {
-  const ShellHeroBanner({
-    super.key,
-    required this.eyebrow,
-    required this.title,
-    required this.description,
-    required this.primaryLabel,
-    required this.secondaryLabel,
-    this.onPrimaryTap,
-    this.onSecondaryTap,
-  });
-
-  final String eyebrow;
+  final String imageUrl;
   final String title;
-  final String description;
-  final String primaryLabel;
-  final String secondaryLabel;
-  final VoidCallback? onPrimaryTap;
-  final VoidCallback? onSecondaryTap;
+  final String subtitle;
+  final VoidCallback onPlayPressed;
+
+  const ShellHeroBanner({
+    super.key, 
+    required this.imageUrl, 
+    required this.title, 
+    required this.subtitle, 
+    required this.onPlayPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1F2733), Color(0xFF121923), Color(0xFF0D121A)],
-        ),
-        border: Border.all(color: theme.dividerColor),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x33000000),
-            blurRadius: 30,
-            offset: Offset(0, 18),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            eyebrow.toUpperCase(),
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: const Color(0xFFFFD29A),
-              letterSpacing: 1.2,
+    final size = MediaQuery.of(context).size;
+    return Stack(
+      children: [
+        // Gambar Utama Poster
+        Container(
+          height: size.height * 0.55,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: NetworkImage(imageUrl),
+              fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(height: 12),
-          Text(title, style: theme.textTheme.displayLarge),
-          const SizedBox(height: 12),
-          Text(description, style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 22),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+        ),
+        // Efek Gradien Memudar Ke Bawah (Vignette & Fade Effect)
+        Container(
+          height: size.height * 0.55,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black38,
+                Colors.transparent,
+                Colors.transparent,
+                Color(0xFF000000), // Memudar penuh ke background aplikasi
+              ],
+              stops: [0.0, 0.3, 0.7, 1.0],
+            ),
+          ),
+        ),
+        // Konten Informasi & Tombol CTA
+        Positioned(
+          bottom: 20,
+          left: 0,
+          right: 0,
+          child: Column(
             children: [
+              Text(title, style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 26)),
+              const SizedBox(height: 8),
+              Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 16),
+              // Tombol Mainkan / Lanjutkan Belajar ala Netflix
               ElevatedButton.icon(
-                onPressed: onPrimaryTap,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(primaryLabel),
-              ),
-              OutlinedButton.icon(
-                onPressed: onSecondaryTap,
-                icon: const Icon(Icons.info_outline_rounded),
-                label: Text(secondaryLabel),
+                onPressed: onPlayPressed,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                ),
+                icon: const Icon(Icons.play_arrow, size: 24),
+                label: const Text('Lanjutkan Belajar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

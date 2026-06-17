@@ -10,14 +10,17 @@ class AssignmentSubmissionResult {
       status:
           _asString(json['status']) ??
           _asString(json['submission_status']) ??
+          _asString(json['result']) ??
           'submitted',
       summary:
           _asString(json['message']) ??
           _asString(json['summary']) ??
+          _asString(json['feedback']) ??
           'Assignment submission uploaded successfully.',
       feedbackLabel:
           _asString(json['feedback_label']) ??
           _asString(json['review_status']) ??
+          _asString(json['state']) ??
           '',
     );
   }

@@ -21,7 +21,9 @@ class ModulesRepositoryImpl implements ModulesRepository {
         _config.resolvePath('/modules/$moduleId'),
       );
       final body = response.data ?? <String, dynamic>{};
-      return ModuleDetail.fromJson(_extractPayload(body));
+      final payload = _extractModuleDetailPayload(body);
+      final detail = ModuleDetail.fromJson(payload);
+      return detail.id.isEmpty ? detail.copyWith(id: moduleId) : detail;
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -42,21 +44,7 @@ class ModulesRepositoryImpl implements ModulesRepository {
           .where((item) => item.id.isNotEmpty || item.title.isNotEmpty)
           .toList();
 
-      if (modules.isNotEmpty) {
-        return modules;
-      }
-
-      return const [
-        ModuleSummary(
-          id: 'module-foundation',
-          title: 'Module payload connected',
-          subtitle: 'Fallback module while waiting for backend list data.',
-          progressLabel: '0%',
-          itemCountLabel: '0 items',
-          badge: 'Ready',
-          accentIndex: 0,
-        ),
-      ];
+      return modules;
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -68,6 +56,15 @@ class ModulesRepositoryImpl implements ModulesRepository {
       return data;
     }
     return body;
+  }
+
+  Map<String, dynamic> _extractModuleDetailPayload(Map<String, dynamic> body) {
+    final payload = _extractPayload(body);
+    final module = payload['module'];
+    if (module is Map<String, dynamic>) {
+      return {...payload, ...module}..remove('module');
+    }
+    return payload;
   }
 
   List<dynamic> _extractList(Map<String, dynamic> payload) {

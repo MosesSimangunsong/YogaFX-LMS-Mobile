@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/widgets/app_background.dart';
 import '../../../../core/widgets/app_empty_view.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/shell_skeleton.dart';
+import '../../../lessons/presentation/screens/lesson_detail_screen.dart';
 import '../../domain/assessment_result.dart';
 import '../../domain/assessment_session.dart';
 import '../controllers/assessment_detail_controller.dart';
@@ -32,6 +34,25 @@ class AssessmentScreen extends ConsumerStatefulWidget {
 
 class _AssessmentScreenState extends ConsumerState<AssessmentScreen> {
   final Map<String, dynamic> _answers = <String, dynamic>{};
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<AssessmentResult?>>(
+      assessmentSubmitControllerProvider(widget.assessmentId),
+      (previous, next) {
+        final previousResult = previous?.valueOrNull;
+        final nextResult = next.valueOrNull;
+        if (nextResult == null || identical(previousResult, nextResult)) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(nextResult.summary)));
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +157,7 @@ class _AssessmentContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final result = submitState.valueOrNull;
+    final hasSubmitted = result != null;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
@@ -214,7 +236,7 @@ class _AssessmentContent extends StatelessWidget {
         ],
         const SizedBox(height: 16),
         ElevatedButton.icon(
-          onPressed: submitState.isLoading ? null : onSubmit,
+          onPressed: submitState.isLoading || hasSubmitted ? null : onSubmit,
           icon: submitState.isLoading
               ? const SizedBox(
                   width: 18,
@@ -224,12 +246,20 @@ class _AssessmentContent extends StatelessWidget {
                     color: Colors.white,
                   ),
                 )
-              : const Icon(Icons.send_rounded),
-          label: const Text('Submit assessment'),
+              : Icon(
+                  hasSubmitted ? Icons.task_alt_rounded : Icons.send_rounded,
+                ),
+          label: Text(
+            hasSubmitted ? 'Assessment submitted' : 'Submit assessment',
+          ),
         ),
         if (result != null) ...[
           const SizedBox(height: 24),
-          _AssessmentResultCard(result: result),
+          _AssessmentResultCard(
+            moduleId: moduleId,
+            lessonId: lessonId,
+            result: result,
+          ),
         ],
       ],
     );
@@ -298,7 +328,7 @@ class _QuestionCard extends StatelessWidget {
                 },
               );
             })
-          else
+          else if (question.isSingleChoice)
             ...question.options.map((option) {
               final isSelected = answer?.toString() == option.id;
 
@@ -337,7 +367,14 @@ class _QuestionCard extends StatelessWidget {
                   ),
                 ),
               );
-            }),
+            })
+          else
+            const AppEmptyView(
+              title: 'Unsupported question type',
+              message:
+                  'This assessment question type is not yet playable in the current mobile build.',
+              icon: Icons.quiz_outlined,
+            ),
         ],
       ),
     );
@@ -345,8 +382,14 @@ class _QuestionCard extends StatelessWidget {
 }
 
 class _AssessmentResultCard extends StatelessWidget {
-  const _AssessmentResultCard({required this.result});
+  const _AssessmentResultCard({
+    required this.moduleId,
+    required this.lessonId,
+    required this.result,
+  });
 
+  final String moduleId;
+  final String lessonId;
   final AssessmentResult result;
 
   @override
@@ -370,6 +413,15 @@ class _AssessmentResultCard extends StatelessWidget {
           Text('Score: ${result.scoreLabel}', style: theme.textTheme.bodyLarge),
           const SizedBox(height: 10),
           Text(result.summary, style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () => context.goNamed(
+              LessonDetailScreen.routeName,
+              pathParameters: {'moduleId': moduleId, 'lessonId': lessonId},
+            ),
+            icon: const Icon(Icons.arrow_back_rounded),
+            label: const Text('Back to lesson'),
+          ),
         ],
       ),
     );

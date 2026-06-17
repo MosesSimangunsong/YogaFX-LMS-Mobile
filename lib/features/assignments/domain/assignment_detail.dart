@@ -12,16 +12,27 @@ class AssignmentDetail {
   });
 
   factory AssignmentDetail.fromJson(Map<String, dynamic> json) {
+    final content =
+        _asMap(json['content']) ?? _asMap(json['details']) ?? const {};
+
     return AssignmentDetail(
-      id: _asString(json['id']) ?? _asString(json['slug']) ?? '',
+      id:
+          _asString(json['id']) ??
+          _asString(json['assignment_id']) ??
+          _asString(json['slug']) ??
+          '',
       title:
           _asString(json['title']) ?? _asString(json['name']) ?? 'Assignment',
       description:
           _asString(json['description']) ??
+          _asString(json['brief']) ??
           _asString(json['summary']) ??
           'Review the assignment brief, then upload your video submission.',
       instructions:
           _asString(json['instructions']) ??
+          _asString(content['instructions']) ??
+          _asString(content['body']) ??
+          _asString(content['content']) ??
           _asString(json['body']) ??
           _asString(json['content']) ??
           'Upload a video file from your device to complete this assignment.',
@@ -32,6 +43,7 @@ class AssignmentDetail {
       dueLabel:
           _asString(json['due_label']) ??
           _asString(json['due_at_label']) ??
+          _asString(json['due_at']) ??
           _asString(json['deadline']) ??
           'No due date',
       canUpload:
@@ -71,6 +83,8 @@ class AssignmentSubmission {
   });
 
   factory AssignmentSubmission.fromJson(Map<String, dynamic> json) {
+    final file = _asMap(json['file']) ?? _asMap(json['video']) ?? const {};
+
     return AssignmentSubmission(
       statusLabel:
           _asString(json['status']) ??
@@ -79,11 +93,15 @@ class AssignmentSubmission {
       fileName:
           _asString(json['file_name']) ??
           _asString(json['original_name']) ??
+          _asString(file['name']) ??
+          _asString(file['file_name']) ??
           _asString(json['video_name']) ??
           '',
       fileUrl:
           _asString(json['file_url']) ??
           _asString(json['url']) ??
+          _asString(file['url']) ??
+          _asString(file['file_url']) ??
           _asString(json['video_url']) ??
           '',
       submittedAtLabel:
@@ -100,6 +118,7 @@ class AssignmentSubmission {
   final String submittedAtLabel;
 
   bool get hasFile => fileName.isNotEmpty || fileUrl.isNotEmpty;
+  bool get hasOpenableFile => _asHttpUri(fileUrl) != null;
 }
 
 class AssignmentFeedback {
@@ -132,7 +151,9 @@ class AssignmentFeedback {
 
 Map<String, dynamic>? _findSubmissionPayload(Map<String, dynamic> json) {
   final direct =
-      _asMap(json['latest_submission']) ?? _asMap(json['submission']);
+      _asMap(json['latest_submission']) ??
+      _asMap(json['latestSubmission']) ??
+      _asMap(json['submission']);
   if (direct != null) {
     return direct;
   }
@@ -148,6 +169,7 @@ Map<String, dynamic>? _findSubmissionPayload(Map<String, dynamic> json) {
 Map<String, dynamic>? _findFeedbackPayload(Map<String, dynamic> json) {
   return _asMap(json['feedback']) ??
       _asMap(json['review']) ??
+      _asMap(json['review_feedback']) ??
       _asMap(json['latest_feedback']);
 }
 
@@ -191,4 +213,21 @@ bool? _asBool(Object? value) {
     return false;
   }
   return null;
+}
+
+Uri? _asHttpUri(Object? value) {
+  final text = _asString(value);
+  if (text == null) {
+    return null;
+  }
+
+  final uri = Uri.tryParse(text);
+  if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+    return null;
+  }
+
+  return switch (uri.scheme.toLowerCase()) {
+    'http' || 'https' => uri,
+    _ => null,
+  };
 }

@@ -31,8 +31,18 @@ class DashboardRepositoryImpl implements DashboardRepository {
   Map<String, dynamic> _extractPayload(Map<String, dynamic> body) {
     final data = body['data'];
     if (data is Map<String, dynamic>) {
+      final dashboard = data['dashboard'];
+      if (dashboard is Map<String, dynamic>) {
+        return {...data, ...dashboard}..remove('dashboard');
+      }
       return data;
     }
+
+    final dashboard = body['dashboard'];
+    if (dashboard is Map<String, dynamic>) {
+      return {...body, ...dashboard}..remove('dashboard');
+    }
+
     return body;
   }
 }

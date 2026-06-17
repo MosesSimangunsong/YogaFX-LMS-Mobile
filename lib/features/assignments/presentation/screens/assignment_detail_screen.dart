@@ -12,8 +12,38 @@ import '../../../../core/widgets/app_section_header.dart';
 import '../../../../core/widgets/shell_metric_strip.dart';
 import '../../../../core/widgets/shell_skeleton.dart';
 import '../../domain/assignment_detail.dart';
+import '../../domain/assignment_submission_result.dart';
 import '../controllers/assignment_detail_controller.dart';
 import '../controllers/assignment_submit_controller.dart';
+
+class PickedAssignmentVideo {
+  const PickedAssignmentVideo({required this.path, required this.name});
+
+  final String path;
+  final String name;
+}
+
+final assignmentVideoPickerProvider =
+    Provider<Future<PickedAssignmentVideo?> Function()>((ref) {
+      return () async {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.video,
+          allowMultiple: false,
+        );
+
+        final file = result?.files.singleOrNull;
+        final path = file?.path;
+        if (path == null || path.isEmpty) {
+          return null;
+        }
+
+        final fileName = file?.name.isNotEmpty == true
+            ? file!.name
+            : File(path).uri.pathSegments.last;
+
+        return PickedAssignmentVideo(path: path, name: fileName);
+      };
+    });
 
 class AssignmentDetailScreen extends ConsumerWidget {
   const AssignmentDetailScreen({
@@ -208,7 +238,7 @@ class _SubmissionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: theme.dividerColor),
       ),
-      child: submission.hasFile
+      child: submission.hasOpenableFile
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -219,9 +249,13 @@ class _SubmissionCard extends StatelessWidget {
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
                       child: Text(
                         submission.fileName.isEmpty
                             ? 'Uploaded file'
@@ -241,6 +275,25 @@ class _SubmissionCard extends StatelessWidget {
                       child: const Text('Open'),
                     ),
                   ],
+                ),
+              ],
+            )
+          : submission.hasFile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(submission.statusLabel, style: theme.textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(
+                  submission.submittedAtLabel,
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  submission.fileName.isEmpty
+                      ? 'A submission file exists, but the backend did not return a valid mobile file URL.'
+                      : '${submission.fileName}\n\nThe backend returned this submission file, but its URL is not valid for mobile opening.',
+                  style: theme.textTheme.bodyMedium,
                 ),
               ],
             )
@@ -312,15 +365,36 @@ class _UploadCardState extends ConsumerState<_UploadCard> {
   String? _selectedFilePath;
   String? _selectedFileName;
 
-  Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.video,
-      allowMultiple: false,
-    );
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual<AsyncValue<AssignmentSubmissionResult?>>(
+      assignmentSubmitControllerProvider(widget.assignment.id),
+      (previous, next) {
+        final previousResult = previous?.valueOrNull;
+        final nextResult = next.valueOrNull;
 
-    final file = result?.files.singleOrNull;
-    final path = file?.path;
-    if (path == null || path.isEmpty) {
+        if (nextResult == null || identical(previousResult, nextResult)) {
+          return;
+        }
+
+        if (mounted) {
+          setState(() {
+            _selectedFilePath = null;
+            _selectedFileName = null;
+          });
+        }
+
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(nextResult.summary)));
+      },
+    );
+  }
+
+  Future<void> _pickFile() async {
+    final result = await ref.read(assignmentVideoPickerProvider)();
+    if (result == null) {
       return;
     }
 
@@ -329,10 +403,8 @@ class _UploadCardState extends ConsumerState<_UploadCard> {
     }
 
     setState(() {
-      _selectedFilePath = path;
-      _selectedFileName = file?.name.isNotEmpty == true
-          ? file!.name
-          : File(path).uri.pathSegments.last;
+      _selectedFilePath = result.path;
+      _selectedFileName = result.name;
     });
   }
 
@@ -425,9 +497,8 @@ class _UploadCardState extends ConsumerState<_UploadCard> {
                         _selectedFilePath == null ||
                         _selectedFileName == null
                     ? null
-                    : () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        final result = await ref
+                    : () {
+                        ref
                             .read(
                               assignmentSubmitControllerProvider(
                                 widget.assignment.id,
@@ -438,19 +509,6 @@ class _UploadCardState extends ConsumerState<_UploadCard> {
                               filePath: _selectedFilePath!,
                               fileName: _selectedFileName!,
                             );
-
-                        if (!mounted) {
-                          return;
-                        }
-
-                        setState(() {
-                          _selectedFilePath = null;
-                          _selectedFileName = null;
-                        });
-
-                        messenger.showSnackBar(
-                          SnackBar(content: Text(result.summary)),
-                        );
                       },
                 icon: submitState.isLoading
                     ? const SizedBox(

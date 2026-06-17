@@ -43,7 +43,7 @@ class ModulesScreen extends ConsumerWidget {
                 Text('Modules', style: theme.textTheme.headlineMedium),
                 const SizedBox(height: 8),
                 Text(
-                  'Browse student modules from the mobile API and open structured module detail screens.',
+                  'Browse your learning path and open each module to continue studying.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 24),
@@ -107,6 +107,10 @@ class _ModulesContent extends StatelessWidget {
               subtitle: module.subtitle,
               duration: module.itemCountLabel,
               badge: module.badge,
+              onTap: () => context.pushNamed(
+                ModuleDetailScreen.routeName,
+                pathParameters: {'moduleId': module.id},
+              ),
               gradient: ModulesScreen
                   ._gradients[entry.key % ModulesScreen._gradients.length],
             );

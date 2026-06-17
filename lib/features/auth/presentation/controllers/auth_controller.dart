@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers.dart';
+import '../../../home/presentation/controllers/dashboard_controller.dart';
+import '../../../modules/presentation/controllers/module_detail_controller.dart';
+import '../../../modules/presentation/controllers/modules_controller.dart';
 import '../../domain/app_user.dart';
 import '../../domain/auth_state.dart';
 
@@ -18,6 +21,7 @@ class AuthController extends Notifier<AuthState> {
         return;
       }
 
+      _invalidateStudentData();
       state = const AuthState.unauthenticated(
         errorMessage: 'Your session has expired. Please log in again.',
       );
@@ -44,6 +48,7 @@ class AuthController extends Notifier<AuthState> {
           .login(email: email, password: password);
 
       state = AuthState.authenticated(user);
+      _invalidateStudentData();
     } catch (error) {
       state = const AuthState.unauthenticated().copyWith(
         isSubmitting: false,
@@ -56,6 +61,7 @@ class AuthController extends Notifier<AuthState> {
     try {
       await ref.read(authRepositoryProvider).logout();
     } finally {
+      _invalidateStudentData();
       state = const AuthState.unauthenticated();
     }
   }
@@ -73,15 +79,24 @@ class AuthController extends Notifier<AuthState> {
     try {
       final user = await ref.read(authRepositoryProvider).restoreSession();
       if (user == null) {
+        _invalidateStudentData();
         state = const AuthState.unauthenticated();
         return;
       }
 
       state = AuthState.authenticated(user);
+      _invalidateStudentData();
     } catch (error) {
+      _invalidateStudentData();
       state = const AuthState.unauthenticated().copyWith(
         errorMessage: error.toString(),
       );
     }
+  }
+
+  void _invalidateStudentData() {
+    ref.invalidate(dashboardControllerProvider);
+    ref.invalidate(modulesControllerProvider);
+    ref.invalidate(moduleDetailControllerProvider);
   }
 }

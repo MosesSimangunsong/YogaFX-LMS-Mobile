@@ -69,7 +69,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Module 3 foundation is ready for mobile auth, session restore, and protected routing.',
+                      'Sign in to continue your YogaFX lessons, modules, and student progress on mobile.',
                       style: theme.textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 32),

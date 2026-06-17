@@ -54,14 +54,14 @@ class AssignmentsRepositoryImpl implements AssignmentsRepository {
     if (data is Map<String, dynamic>) {
       final assignment = data['assignment'];
       if (assignment is Map<String, dynamic>) {
-        return assignment;
+        return {...data, ...assignment}..remove('assignment');
       }
       return data;
     }
 
     final assignment = body['assignment'];
     if (assignment is Map<String, dynamic>) {
-      return assignment;
+      return {...body, ...assignment}..remove('assignment');
     }
 
     return body;
@@ -70,8 +70,22 @@ class AssignmentsRepositoryImpl implements AssignmentsRepository {
   Map<String, dynamic> _extractActionPayload(Map<String, dynamic> body) {
     final data = body['data'];
     if (data is Map<String, dynamic>) {
+      for (final key in const ['submission', 'result']) {
+        final nested = data[key];
+        if (nested is Map<String, dynamic>) {
+          return {...data, ...nested}..remove(key);
+        }
+      }
       return data;
     }
+
+    for (final key in const ['submission', 'result']) {
+      final nested = body[key];
+      if (nested is Map<String, dynamic>) {
+        return {...body, ...nested}..remove(key);
+      }
+    }
+
     return body;
   }
 }

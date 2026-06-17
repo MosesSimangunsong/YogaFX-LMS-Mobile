@@ -21,7 +21,7 @@ class CertificatesRepositoryImpl implements CertificatesRepository {
         _config.resolvePath('/certificates/$certificateId'),
       );
       final body = response.data ?? <String, dynamic>{};
-      return CertificateDetail.fromJson(_extractPayload(body));
+      return CertificateDetail.fromJson(_extractDetailPayload(body));
     } on DioException catch (error) {
       throw mapDioException(error);
     }
@@ -54,6 +54,24 @@ class CertificatesRepositoryImpl implements CertificatesRepository {
     return body;
   }
 
+  Map<String, dynamic> _extractDetailPayload(Map<String, dynamic> body) {
+    final data = body['data'];
+    if (data is Map<String, dynamic>) {
+      final certificate = data['certificate'];
+      if (certificate is Map<String, dynamic>) {
+        return {...data, ...certificate}..remove('certificate');
+      }
+      return data;
+    }
+
+    final certificate = body['certificate'];
+    if (certificate is Map<String, dynamic>) {
+      return {...body, ...certificate}..remove('certificate');
+    }
+
+    return body;
+  }
+
   List<dynamic> _extractList(Map<String, dynamic> payload) {
     final dataList = payload['data'];
     if (dataList is List) {
@@ -67,6 +85,10 @@ class CertificatesRepositoryImpl implements CertificatesRepository {
 
     if (payload case {'items': List<dynamic> items}) {
       return items;
+    }
+
+    if (payload case {'results': List<dynamic> results}) {
+      return results;
     }
 
     return const [];

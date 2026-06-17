@@ -140,7 +140,11 @@ class _LessonDetailContent extends ConsumerWidget {
                   ),
                   ShellMetricItem(
                     label: 'Audio',
-                    value: lesson.audio.isAvailable ? 'Ready' : 'Missing',
+                    value: lesson.audio.isAvailable
+                        ? 'Ready'
+                        : lesson.audio.hasSource
+                        ? 'Invalid'
+                        : 'Missing',
                     icon: Icons.graphic_eq_rounded,
                     iconColor: const Color(0xFFFF8A80),
                   ),
@@ -257,7 +261,7 @@ class _LessonDetailContent extends ConsumerWidget {
         lesson.video.hasSource
             ? _LessonVideoCard(video: lesson.video)
             : const SizedBox(
-                height: 220,
+                height: 260,
                 child: AppEmptyView(
                   title: 'No lesson video',
                   message:
@@ -272,10 +276,10 @@ class _LessonDetailContent extends ConsumerWidget {
               'Stream mobile audio directly from the backend-provided URL.',
         ),
         const SizedBox(height: 16),
-        lesson.audio.isAvailable
+        lesson.audio.hasSource
             ? _LessonAudioCard(audio: lesson.audio)
             : const SizedBox(
-                height: 180,
+                height: 220,
                 child: AppEmptyView(
                   title: 'No lesson audio',
                   message: 'There is no audio attachment on this lesson yet.',
@@ -294,7 +298,7 @@ class _LessonDetailContent extends ConsumerWidget {
         const AppSectionHeader(
           title: 'Assessment',
           subtitle:
-              'Related assessment CTA placeholder before the full assessment module.',
+              'Open and submit the lesson assessment using the backend-backed mobile flow.',
         ),
         const SizedBox(height: 16),
         _AssessmentCard(
@@ -488,6 +492,7 @@ class _LessonAudioCard extends StatefulWidget {
 class _LessonAudioCardState extends State<_LessonAudioCard> {
   late final AudioPlayer _player = AudioPlayer();
   bool _isReady = false;
+  bool _isLoading = true;
   String? _errorMessage;
 
   @override
@@ -496,17 +501,46 @@ class _LessonAudioCardState extends State<_LessonAudioCard> {
     _prepare();
   }
 
+  @override
+  void didUpdateWidget(covariant _LessonAudioCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.audio.url != widget.audio.url) {
+      _prepare();
+    }
+  }
+
   Future<void> _prepare() async {
+    final playbackUri = widget.audio.playbackUri;
+    if (playbackUri == null) {
+      setState(() {
+        _isReady = false;
+        _isLoading = false;
+        _errorMessage =
+            'Backend returned an invalid lesson audio URL for mobile playback.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isReady = false;
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     try {
-      await _player.setUrl(widget.audio.url);
+      await _player.stop();
+      await _player.setUrl(playbackUri.toString());
       if (mounted) {
         setState(() {
           _isReady = true;
+          _isLoading = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
+          _isReady = false;
+          _isLoading = false;
           _errorMessage = 'Audio could not be prepared on this device.';
         });
       }
@@ -536,8 +570,12 @@ class _LessonAudioCardState extends State<_LessonAudioCard> {
           Text(widget.audio.title, style: theme.textTheme.titleLarge),
           const SizedBox(height: 14),
           if (_errorMessage != null)
-            Text(_errorMessage!, style: theme.textTheme.bodyMedium)
-          else if (!_isReady)
+            AppEmptyView(
+              title: 'Audio unavailable',
+              message: _errorMessage!,
+              icon: Icons.graphic_eq_outlined,
+            )
+          else if (_isLoading || !_isReady)
             const ShellSkeleton(height: 48, radius: 18)
           else
             StreamBuilder<PlayerState>(
@@ -623,9 +661,13 @@ class _WorkbookCard extends StatelessWidget {
                 ),
               ],
             )
-          : const AppEmptyView(
-              title: 'No workbook attached',
-              message: 'This lesson does not include a workbook file yet.',
+          : AppEmptyView(
+              title: workbook.hasSource
+                  ? 'Workbook unavailable'
+                  : 'No workbook attached',
+              message: workbook.hasSource
+                  ? 'The lesson includes a workbook reference, but the file URL is invalid for mobile.'
+                  : 'This lesson does not include a workbook file yet.',
               icon: Icons.file_present_outlined,
             ),
     );
@@ -661,7 +703,7 @@ class _AssessmentCard extends StatelessWidget {
                 Text(assessment.title, style: theme.textTheme.titleLarge),
                 const SizedBox(height: 8),
                 Text(
-                  'Assessment flow will connect here in the next module while keeping lesson detail stable.',
+                  'Open the linked assessment and submit your answers without leaving the lesson journey.',
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),

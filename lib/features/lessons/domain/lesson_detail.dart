@@ -13,18 +13,30 @@ class LessonDetail {
 
   factory LessonDetail.fromJson(Map<String, dynamic> json) {
     final media = _asMap(json['media']) ?? const <String, dynamic>{};
+    final content = _asMap(json['content']) ?? const <String, dynamic>{};
+    final attachments =
+        _asMap(json['attachments']) ??
+        _asMap(json['files']) ??
+        const <String, dynamic>{};
 
     return LessonDetail(
-      id: _asString(json['id']) ?? _asString(json['slug']) ?? '',
+      id:
+          _asString(json['id']) ??
+          _asString(json['lesson_id']) ??
+          _asString(json['slug']) ??
+          '',
       title: _asString(json['title']) ?? _asString(json['name']) ?? 'Lesson',
       body:
           _asString(json['content']) ??
+          _asString(content['body']) ??
+          _asString(content['content']) ??
           _asString(json['body']) ??
           _asString(json['description']) ??
           'Lesson content is ready for mobile rendering.',
       progressLabel:
           _asString(json['progress_label']) ??
           _asString(json['progress']) ??
+          _asString(json['progress_percent']) ??
           '--',
       completionLabel:
           _asString(json['completion_label']) ??
@@ -34,14 +46,22 @@ class LessonDetail {
       video: LessonVideo.fromJson(
         _asMap(json['video']) ??
             _asMap(media['video']) ??
+            _asMap(attachments['video']) ??
+            _asMap(content['video']) ??
             _videoFromFlatJson(media) ??
+            _videoFromFlatJson(attachments) ??
+            _videoFromFlatJson(content) ??
             _videoFromFlatJson(json) ??
             const <String, dynamic>{},
       ),
       audio: LessonAudio.fromJson(
         _asMap(json['audio']) ??
             _asMap(media['audio']) ??
+            _asMap(attachments['audio']) ??
+            _asMap(content['audio']) ??
             _audioFromFlatJson(media) ??
+            _audioFromFlatJson(attachments) ??
+            _audioFromFlatJson(content) ??
             _audioFromFlatJson(json) ??
             const <String, dynamic>{},
       ),
@@ -49,7 +69,12 @@ class LessonDetail {
         _asMap(json['workbook']) ??
             _asMap(json['file']) ??
             _asMap(media['workbook']) ??
+            _asMap(attachments['workbook']) ??
+            _asMap(attachments['file']) ??
+            _asMap(content['workbook']) ??
             _workbookFromFlatJson(media) ??
+            _workbookFromFlatJson(attachments) ??
+            _workbookFromFlatJson(content) ??
             _workbookFromFlatJson(json) ??
             const <String, dynamic>{},
       ),
@@ -144,14 +169,22 @@ class LessonAudio {
           _asString(json['title']) ??
           _asString(json['label']) ??
           'Lesson audio',
-      url: _asString(json['url']) ?? _asString(json['audio_url']) ?? '',
+      url:
+          _asString(json['url']) ??
+          _asString(json['audio_url']) ??
+          _asString(json['stream_url']) ??
+          '',
     );
   }
 
   final String title;
   final String url;
 
-  bool get isAvailable => url.isNotEmpty;
+  Uri? get playbackUri => _asHttpUri(url);
+
+  bool get hasSource => url.isNotEmpty;
+
+  bool get isAvailable => playbackUri != null;
 }
 
 class LessonWorkbook {
@@ -164,14 +197,22 @@ class LessonWorkbook {
           _asString(json['title']) ??
           _asString(json['name']) ??
           'Workbook',
-      url: _asString(json['url']) ?? _asString(json['file_url']) ?? '',
+      url:
+          _asString(json['url']) ??
+          _asString(json['file_url']) ??
+          _asString(json['download_url']) ??
+          '',
     );
   }
 
   final String label;
   final String url;
 
-  bool get isAvailable => url.isNotEmpty;
+  Uri? get launchUri => _asHttpUri(url);
+
+  bool get hasSource => url.isNotEmpty;
+
+  bool get isAvailable => launchUri != null;
 }
 
 class LessonAssessment {
@@ -260,7 +301,10 @@ Map<String, dynamic>? _videoFromFlatJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic>? _audioFromFlatJson(Map<String, dynamic> json) {
-  final url = _asString(json['audio_url']) ?? _asString(json['audio']);
+  final url =
+      _asString(json['audio_url']) ??
+      _asString(json['audio']) ??
+      _asString(json['stream_url']);
   if (url == null) {
     return null;
   }
@@ -269,7 +313,10 @@ Map<String, dynamic>? _audioFromFlatJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic>? _workbookFromFlatJson(Map<String, dynamic> json) {
-  final url = _asString(json['workbook_url']) ?? _asString(json['file_url']);
+  final url =
+      _asString(json['workbook_url']) ??
+      _asString(json['file_url']) ??
+      _asString(json['download_url']);
   if (url == null) {
     return null;
   }

@@ -66,12 +66,23 @@ class LessonsRepositoryImpl implements LessonsRepository {
       if (lesson is Map<String, dynamic>) {
         return {...data, ...lesson}..remove('lesson');
       }
+
+      final detail = data['lesson_detail'];
+      if (detail is Map<String, dynamic>) {
+        return {...data, ...detail}..remove('lesson_detail');
+      }
+
       return data;
     }
 
     final lesson = body['lesson'];
     if (lesson is Map<String, dynamic>) {
       return {...body, ...lesson}..remove('lesson');
+    }
+
+    final detail = body['lesson_detail'];
+    if (detail is Map<String, dynamic>) {
+      return {...body, ...detail}..remove('lesson_detail');
     }
 
     return body;

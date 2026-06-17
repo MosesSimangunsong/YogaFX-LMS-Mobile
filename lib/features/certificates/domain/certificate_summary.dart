@@ -10,12 +10,17 @@ class CertificateSummary {
 
   factory CertificateSummary.fromJson(Map<String, dynamic> json) {
     return CertificateSummary(
-      id: _asString(json['id']) ?? _asString(json['slug']) ?? '',
+      id:
+          _asString(json['id']) ??
+          _asString(json['certificate_id']) ??
+          _asString(json['slug']) ??
+          '',
       title:
           _asString(json['title']) ?? _asString(json['name']) ?? 'Certificate',
       subtitle:
           _asString(json['subtitle']) ??
           _asString(json['description']) ??
+          _asString(json['summary']) ??
           _asString(json['module_title']) ??
           'YogaFX completion certificate',
       statusLabel:
@@ -25,11 +30,13 @@ class CertificateSummary {
       issuedLabel:
           _asString(json['issued_at_label']) ??
           _asString(json['issued_at']) ??
+          _asString(json['issued_on']) ??
           _asString(json['date']) ??
           'Ready to view',
       badge:
           _asString(json['badge']) ??
           _asString(json['eligibility']) ??
+          _asString(json['eligibility_label']) ??
           _asString(json['state']),
     );
   }

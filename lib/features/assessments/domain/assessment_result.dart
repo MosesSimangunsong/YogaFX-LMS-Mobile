@@ -12,10 +12,12 @@ class AssessmentResult {
       scoreLabel:
           _asString(json['score_label']) ??
           _asString(json['score']) ??
+          _asString(json['score_percent']) ??
           _asString(json['grade']) ??
           '--',
       summary:
           _asString(json['summary']) ??
+          _asString(json['feedback']) ??
           _asString(json['message']) ??
           'Assessment submitted successfully.',
     );

@@ -7,12 +7,16 @@ class AssessmentSession {
   });
 
   factory AssessmentSession.fromJson(Map<String, dynamic> json) {
-    final questions = _asList(json['questions'])
+    final questions = _readQuestions(json)
         .map((item) => AssessmentQuestion.fromJson(_asMap(item) ?? const {}))
         .toList();
 
     return AssessmentSession(
-      id: _asString(json['id']) ?? _asString(json['slug']) ?? '',
+      id:
+          _asString(json['id']) ??
+          _asString(json['assessment_id']) ??
+          _asString(json['slug']) ??
+          '',
       title:
           _asString(json['title']) ?? _asString(json['name']) ?? 'Assessment',
       description:
@@ -40,10 +44,15 @@ class AssessmentQuestion {
 
   factory AssessmentQuestion.fromJson(Map<String, dynamic> json) {
     return AssessmentQuestion(
-      id: _asString(json['id']) ?? _asString(json['slug']) ?? '',
+      id:
+          _asString(json['id']) ??
+          _asString(json['question_id']) ??
+          _asString(json['slug']) ??
+          '',
       prompt:
           _asString(json['prompt']) ??
           _asString(json['question']) ??
+          _asString(json['text']) ??
           _asString(json['title']) ??
           'Question',
       type:
@@ -51,7 +60,7 @@ class AssessmentQuestion {
           _asString(json['question_type']) ??
           'single_choice',
       required: _asBool(json['required']) ?? true,
-      options: _asList(json['options'])
+      options: _readOptions(json)
           .map((item) => AssessmentOption.fromJson(_asMap(item) ?? const {}))
           .toList(),
     );
@@ -64,8 +73,14 @@ class AssessmentQuestion {
   final List<AssessmentOption> options;
 
   bool get isMultipleChoice => type == 'multiple_choice' || type == 'checkbox';
+  bool get isSingleChoice =>
+      type == 'single_choice' || type == 'radio' || type == 'select';
   bool get isTextInput =>
-      type == 'text' || type == 'textarea' || type == 'essay';
+      type == 'text' ||
+      type == 'textarea' ||
+      type == 'essay' ||
+      type == 'short_text' ||
+      type == 'long_text';
 }
 
 class AssessmentOption {
@@ -122,4 +137,26 @@ bool? _asBool(Object? value) {
     return false;
   }
   return null;
+}
+
+List<dynamic> _readQuestions(Map<String, dynamic> json) {
+  for (final key in const ['questions', 'items', 'entries']) {
+    final list = _asList(json[key]);
+    if (list.isNotEmpty) {
+      return list;
+    }
+  }
+
+  return const [];
+}
+
+List<dynamic> _readOptions(Map<String, dynamic> json) {
+  for (final key in const ['options', 'choices', 'answers']) {
+    final list = _asList(json[key]);
+    if (list.isNotEmpty) {
+      return list;
+    }
+  }
+
+  return const [];
 }

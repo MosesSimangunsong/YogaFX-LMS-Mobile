@@ -39,6 +39,10 @@ class DashboardData {
   final DashboardContinueLearning continueLearning;
   final List<DashboardMetric> metrics;
   final List<DashboardSection> sections;
+
+  bool get hasContinueLearning =>
+      continueLearning.title.isNotEmpty ||
+      continueLearning.description.isNotEmpty;
 }
 
 class DashboardContinueLearning {
@@ -48,24 +52,26 @@ class DashboardContinueLearning {
     required this.description,
     required this.primaryActionLabel,
     required this.secondaryActionLabel,
+    required this.moduleId,
+    required this.lessonId,
   });
 
   factory DashboardContinueLearning.fromJson(Map<String, dynamic> json) {
+    final module = _asMap(json['module']) ?? const <String, dynamic>{};
+    final lesson = _asMap(json['lesson']) ?? const <String, dynamic>{};
+
     return DashboardContinueLearning(
-      eyebrow:
-          _asString(json['eyebrow']) ??
-          _asString(json['label']) ??
-          'Continue learning',
+      eyebrow: _asString(json['eyebrow']) ?? _asString(json['label']) ?? '',
       title:
           _asString(json['title']) ??
           _asString(json['lesson_title']) ??
           _asString(json['module_title']) ??
-          'Your next YogaFX session is ready.',
+          '',
       description:
           _asString(json['description']) ??
           _asString(json['summary']) ??
           _asString(json['excerpt']) ??
-          'Pick up where you left off and keep your momentum moving.',
+          '',
       primaryActionLabel:
           _asString(json['primary_action_label']) ??
           _asString(json['primary_cta']) ??
@@ -73,7 +79,19 @@ class DashboardContinueLearning {
       secondaryActionLabel:
           _asString(json['secondary_action_label']) ??
           _asString(json['secondary_cta']) ??
-          'View details',
+          'Open modules',
+      moduleId:
+          _asString(json['module_id']) ??
+          _asString(json['moduleId']) ??
+          _asString(module['id']) ??
+          _asString(module['slug']) ??
+          '',
+      lessonId:
+          _asString(json['lesson_id']) ??
+          _asString(json['lessonId']) ??
+          _asString(lesson['id']) ??
+          _asString(lesson['slug']) ??
+          '',
     );
   }
 
@@ -82,6 +100,12 @@ class DashboardContinueLearning {
   final String description;
   final String primaryActionLabel;
   final String secondaryActionLabel;
+  final String moduleId;
+  final String lessonId;
+
+  bool get canOpenModule => moduleId.isNotEmpty;
+
+  bool get canOpenLesson => canOpenModule && lessonId.isNotEmpty;
 }
 
 class DashboardMetric {
@@ -110,7 +134,7 @@ class DashboardSection {
   });
 
   factory DashboardSection.fromJson(Map<String, dynamic> json) {
-    final items = _asList(json['items'])
+    final items = _readSectionItems(json)
         .map((item) => DashboardCardItem.fromJson(_asMap(item) ?? const {}))
         .where((item) => item.title.isNotEmpty)
         .toList();
@@ -137,9 +161,14 @@ class DashboardCardItem {
     required this.subtitle,
     required this.durationLabel,
     required this.badge,
+    required this.moduleId,
+    required this.lessonId,
   });
 
   factory DashboardCardItem.fromJson(Map<String, dynamic> json) {
+    final module = _asMap(json['module']) ?? const <String, dynamic>{};
+    final lesson = _asMap(json['lesson']) ?? const <String, dynamic>{};
+
     return DashboardCardItem(
       title:
           _asString(json['title']) ??
@@ -160,6 +189,20 @@ class DashboardCardItem {
           _asString(json['badge']) ??
           _asString(json['tag']) ??
           _asString(json['status']),
+      moduleId:
+          _asString(json['module_id']) ??
+          _asString(json['moduleId']) ??
+          (_looksLikeModuleItem(json) ? _asString(json['id']) : null) ??
+          _asString(module['id']) ??
+          _asString(module['slug']) ??
+          '',
+      lessonId:
+          _asString(json['lesson_id']) ??
+          _asString(json['lessonId']) ??
+          (_looksLikeLessonItem(json) ? _asString(json['id']) : null) ??
+          _asString(lesson['id']) ??
+          _asString(lesson['slug']) ??
+          '',
     );
   }
 
@@ -167,6 +210,12 @@ class DashboardCardItem {
   final String subtitle;
   final String durationLabel;
   final String? badge;
+  final String moduleId;
+  final String lessonId;
+
+  bool get canOpenModule => moduleId.isNotEmpty;
+
+  bool get canOpenLesson => canOpenModule && lessonId.isNotEmpty;
 }
 
 List<DashboardMetric> _parseMetrics(Map<String, dynamic> json) {
@@ -236,20 +285,7 @@ List<DashboardSection> _parseSections(Map<String, dynamic> json) {
     return fallbackCollections;
   }
 
-  return const [
-    DashboardSection(
-      title: 'Your dashboard is ready',
-      subtitle: 'Connect your backend payload to replace this fallback rail.',
-      items: [
-        DashboardCardItem(
-          title: 'Dashboard payload connected',
-          subtitle: 'Module 5 fallback content',
-          durationLabel: 'Live',
-          badge: 'Ready',
-        ),
-      ],
-    ),
-  ];
+  return const [];
 }
 
 Map<String, dynamic>? _asMap(Object? value) {
@@ -290,4 +326,45 @@ String _labelizeKey(String value) {
         (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
       )
       .join(' ');
+}
+
+List<dynamic> _readSectionItems(Map<String, dynamic> json) {
+  const itemKeys = ['items', 'entries', 'modules', 'lessons', 'cards'];
+  for (final key in itemKeys) {
+    final list = _asList(json[key]);
+    if (list.isNotEmpty) {
+      return list;
+    }
+  }
+
+  return const [];
+}
+
+bool _looksLikeModuleItem(Map<String, dynamic> json) {
+  final type =
+      _asString(json['type']) ??
+      _asString(json['entity_type']) ??
+      _asString(json['kind']);
+  if (type == 'module') {
+    return true;
+  }
+
+  return json.containsKey('lesson_count') ||
+      json.containsKey('lessons_count') ||
+      json.containsKey('assignment_count') ||
+      json.containsKey('assignments_count');
+}
+
+bool _looksLikeLessonItem(Map<String, dynamic> json) {
+  final type =
+      _asString(json['type']) ??
+      _asString(json['entity_type']) ??
+      _asString(json['kind']);
+  if (type == 'lesson') {
+    return true;
+  }
+
+  return json.containsKey('duration') ||
+      json.containsKey('duration_label') ||
+      json.containsKey('lesson_title');
 }
